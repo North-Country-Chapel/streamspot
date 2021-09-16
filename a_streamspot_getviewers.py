@@ -10,14 +10,10 @@ id_num = ""
 dashboard = "https://mystreamspot.com/dashboard"
 mydate = date.today()
 
-#open session
-session = requests.session()
 
 def get_first_file_id():    
     global response
     global id_num
-
-    print(id_num)
       
     id_num = str(re.search(r"=([A-Z])\w+==", response.text))
     id_num = id_num[46:59]    
@@ -27,13 +23,11 @@ def get_first_file_id():
         time.sleep(30)
         id_num = str(re.search(r"=([A-Z])\w+==", response.text))
         id_num = id_num[46:59]
-        print("nested " + id_num)
 
     return response, id_num
 
 
 def download_file():
-    
     global url
     global response
     global id_num
@@ -53,6 +47,8 @@ def download_file():
         file.write(response.content)
         file.close()
 
+#open session
+session = requests.session()
 
 # log in
 response = session.post(url + '/login', data=values, allow_redirects=True)
@@ -70,16 +66,15 @@ else:
 get_first_file_id()
 download_file()
 
+#get the second newest study for Sunday 1st service
 if mydate.strftime('%w') == '1': 
 
     id_num = re.finditer(r"=([A-Z])\w+==", response.text)
     array = []
     for match in id_num:
         array.append(match.group())
-    id_num = array[1]  
-    print(id_num) 
-
-    #get the id_num_num of the latest study  
+    id_num = array[1]   
+  
     if not id_num:
         time.sleep(30)
         id_num = re.finditer(r"=([A-Z])\w+==", response.text)
