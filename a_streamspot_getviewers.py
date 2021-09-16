@@ -17,8 +17,7 @@ def get_first_file_id():
     global response
     global id_num
 
-    print(id_num)
-      
+    
     id_num = str(re.search(r"=([A-Z])\w+==", response.text))
     id_num = id_num[46:59]    
     print(id_num)
@@ -27,7 +26,6 @@ def get_first_file_id():
         time.sleep(30)
         id_num = str(re.search(r"=([A-Z])\w+==", response.text))
         id_num = id_num[46:59]
-        print("nested " + id_num)
 
     return response, id_num
 
@@ -77,7 +75,6 @@ if mydate.strftime('%w') == '1':
     for match in id_num:
         array.append(match.group())
     id_num = array[1]  
-    print(id_num) 
 
     #get the id_num_num of the latest study  
     if not id_num:
