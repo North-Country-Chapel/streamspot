@@ -1,4 +1,4 @@
 # Streamspot
-Learning Python by automating some Streamspot stuff with some python scripts
+Learning python by automating streamspot stuff with some python scripts
 
-Use a_streamspot_getviewers.py to get the latest video unique-viewers CSV, unless it's Monday. On Monday it downloads the newest and the second newest study because we have two Sunday videos. Run it as a cronjob/task scheduler to automate the whole thing. 
+a_streamspot_getviewers.py logs in to mystreamspot.com and pulls the newest unique-viewer analytics CSV file. Except on Mondays where it pulls the newest and second-newest because there are two Sunday videos. Create a cronjob/task scheduler to make it fully hands-off. Downloads the file to the folder the script is in.
