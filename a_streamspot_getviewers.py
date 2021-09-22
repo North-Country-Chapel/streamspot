@@ -12,7 +12,6 @@ mydate = date.today()
 def open_session():
     global session
     global response
-    global session
     global url
     dashboard = "https://mystreamspot.com/dashboard"
     #open session
