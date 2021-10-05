@@ -97,3 +97,5 @@ if mydate.strftime('%w') == '1':
 open_session()
 get_first_file_id()
 download_file()
+
+# TODO email successful downloads
