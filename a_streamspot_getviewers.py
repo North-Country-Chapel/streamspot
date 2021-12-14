@@ -1,17 +1,21 @@
 import requests
 import re
 import time
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, to_email
 from datetime import date
 
 url = 'https://mystreamspot.com'
-values = {'username': '<lol>',
-          'password': '<no>'}
+values = {'username': 'USERNAME',
+          'password': 'PASSWORD'}
 id_num = ""
 mydate = date.today()
 
 def open_session():
     global session
     global response
+    global session
     global url
     dashboard = "https://mystreamspot.com/dashboard"
     #open session
@@ -23,8 +27,9 @@ def open_session():
 
     #test for actual login
     if str(response.url) != dashboard:
+        time.sleep(10)
+        response = session.post(url + '/login', data=values, allow_redirects=True)
         time.sleep(30)
-        response = session.post(url + '/login', data=values, allow_redirects=True) 
     else:
         #go to analytics page
         response = session.get(url + '/analytics')
@@ -72,6 +77,8 @@ def download_file():
     return response
 
 
+
+
 #get the second newest study for Sunday 1st service
 if mydate.strftime('%w') == '1': 
     open_session()
@@ -98,4 +105,15 @@ open_session()
 get_first_file_id()
 download_file()
 
-# TODO email successful downloads
+message = Mail(
+    from_email='from@email.com',
+    to_emails='to@email.com',
+    subject='Streamspot script ran successfully',
+    html_content='This email indicates that the script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
+)
+
+sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+response = sg.send(message)  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
+
+
+#TODO: try/catch
