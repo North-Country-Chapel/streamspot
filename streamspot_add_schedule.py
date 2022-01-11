@@ -2,11 +2,13 @@ import requests
 import time
 import datetime
 from datetime import date
-
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, to_email
 
 url = 'https://mystreamspot.com'
-values = {'username': '<lol>',
-          'password': '<no>'}
+values = {'username': '<username>',
+          'password': '<password>'}
 dashboard = url + "/dashboard"
 mydate = date.today()
 study_start_minute = "55"
@@ -34,18 +36,19 @@ def open_session():
         response = session.post(url + '/login', data=values, allow_redirects=True)
         time.sleep(30)
     else:
-        #go to add broadcast page
+        #go to analytics page
         response = session.get(url + '/scheduler/add-single-broadcast')
 
+      
     return response
 
 
       
 def get_posting_date(posting_day):
 
-    fri = mydate + datetime.timedelta( (4-mydate.weekday()) % 7)
-    mon = mydate + datetime.timedelta( (0-mydate.weekday()) % 7)
-    sun = mydate + datetime.timedelta( (6-mydate.weekday()) % 7)
+    fri = mydate + datetime.timedelta( (4-mydate.weekday()) % 7) + datetime.timedelta(days=7)
+    mon = mydate + datetime.timedelta( (0-mydate.weekday()) % 7) + datetime.timedelta(days=7)
+    sun = mydate + datetime.timedelta( (6-mydate.weekday()) % 7) + datetime.timedelta(days=7)
     
     if posting_day == 'Friday':
         facts = {
@@ -79,16 +82,38 @@ def get_posting_date(posting_day):
    
 open_session() 
 
-for studay in ['Friday', 'Monday', 'Sunday1', 'Sunday2']:
+for studay in ['Friday', 'Monday', "Sunday1", "Sunday2"]:
     facts = get_posting_date(studay)
-    payload = {"formattedStartDate": str(facts['study_date']), "formattedStartHour": str(facts['study_start_hour']), "formattedStartMinute":str(study_start_minute), "formattedEndDate":str(facts['study_date']),"formattedEndHour":str(facts['study_end_hour']), "formattedEndMinute":str(study_end_minute), "title":str(facts['study_title']), "catSelector":"none", "expiration":"30", "access":"0", "passcode":"", "excludeFromSchedule": "0", "facebookLive": "1", "facebookAccountId": "<nottoday>", "facebookPrivacy": "EVERYONE", "facebookTargeting": "everyone", "scheduledFacebook": "0", "Submit": "Add+Broadcast"}
+    payload = {"formattedStartDate": str(facts['study_date']), "formattedStartHour": str(facts['study_start_hour']), "formattedStartMinute":str(study_start_minute), "formattedEndDate":str(facts['study_date']),"formattedEndHour":str(facts['study_end_hour']), "formattedEndMinute":str(study_end_minute), "title":str(facts['study_title']), "catSelector":"none", "expiration":"30", "access":"0", "passcode":"", "excludeFromSchedule": "0", "facebookLive": "1", "facebookAccountId": "145193313314", "facebookPrivacy": "EVERYONE", "facebookTargeting": "everyone", "scheduledFacebook": "0", "Submit": "Add+Broadcast"}
     
     
     response = session.post("https://mystreamspot.com/scheduler/processSingleBroadcast", data=payload, allow_redirects=True)
 
     time.sleep(10)
+
     
 
-    #TODO shoot off an email if responses aren't msg=1
-    #if response.url != "https://mystreamspot.com/scheduler/?msg=1": 
-     #   ("Panic")
+
+if response.url == "https://mystreamspot.com/scheduler/?msg=1": 
+    message = Mail(
+    from_email='kristin@northcountrychapel.com',
+    to_emails='kristin@northcountrychapel.com',
+    subject='Streamspot script ran successfully',
+    html_content='This email indicates that the scheduling script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
+    )
+
+    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+    response = sg.send(message)
+else:
+    message = Mail(
+    from_email='kristin@northcountrychapel.com',
+    to_emails='kristin@northcountrychapel.com',
+    subject='Streamspot script needs checking',
+    html_content='This email indicates that the scheduling script did not run as expected. <p>Check to make sure future studies were scheduled on the site</p>'
+    )
+
+    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
+    response = sg.send(message)
+
+
+#TODO: try/catch
