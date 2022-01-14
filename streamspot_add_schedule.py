@@ -96,24 +96,22 @@ for studay in ['Friday', 'Monday', "Sunday1", "Sunday2"]:
 
 if response.url == "https://mystreamspot.com/scheduler/?msg=1": 
     message = Mail(
-    from_email='kristin@northcountrychapel.com',
-    to_emails='kristin@northcountrychapel.com',
+    from_email='from@example.com',
+    to_emails='to@example.com',
     subject='Streamspot script ran successfully',
     html_content='This email indicates that the scheduling script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
     )
 
-    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-    response = sg.send(message)
 else:
     message = Mail(
-    from_email='kristin@northcountrychapel.com',
-    to_emails='kristin@northcountrychapel.com',
+    from_email='from@example.com',
+    to_emails='to@example.com',
     subject='Streamspot script needs checking',
-    html_content='This email indicates that the scheduling script did not run as expected. <p>Check to make sure future studies were scheduled on the site</p>'
+    html_content='This email indicates that the scheduling script did not run as expected. <p>Check to make sure future studies were scheduled on the site.</p>'
     )
 
-    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
-    response = sg.send(message)
+sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+response = sg.send(message)
 
 
 #TODO: try/catch
