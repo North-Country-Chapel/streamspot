@@ -7,8 +7,8 @@ from sendgrid.helpers.mail import Mail, to_email
 from datetime import date
 
 url = 'https://mystreamspot.com'
-values = {'username': 'USERNAME',
-          'password': 'PASSWORD'}
+values = {'username': 'SP_USER',
+          'password': 'SP_PASSWORD'}
 id_num = ""
 mydate = date.today()
 
