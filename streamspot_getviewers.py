@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import requests
 import re
 import time
@@ -6,11 +7,15 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, to_email
 from datetime import date
 
+
+load_dotenv()
 url = 'https://mystreamspot.com'
-values = {'username': 'SP_USER',
-          'password': 'SP_PASSWORD'}
+values = {'username': os.getenv('SP_USER'),
+          'password': os.getenv('SP_PASSWORD')}
 id_num = ""
 mydate = date.today()
+
+
 
 def open_session():
     global session
@@ -20,7 +25,7 @@ def open_session():
     dashboard = "https://mystreamspot.com/dashboard"
     #open session
     session = requests.session()
-
+    
     # log in
     response = session.post(url + '/login', data=values, allow_redirects=True)
     
@@ -30,9 +35,11 @@ def open_session():
         time.sleep(10)
         response = session.post(url + '/login', data=values, allow_redirects=True)
         time.sleep(30)
+        
     else:
         #go to analytics page
         response = session.get(url + '/analytics')
+        
         
     return response
 
@@ -68,6 +75,7 @@ def download_file():
     dictionary = response.headers
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
+
 
     #download with header filename 
     with open(data, 'wb') as file:
