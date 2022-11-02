@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import requests
 import re
 import time
@@ -8,19 +7,16 @@ from sendgrid.helpers.mail import Mail, to_email
 from datetime import date
 
 
-load_dotenv()
 url = 'https://mystreamspot.com'
-values = {'username': os.getenv('SP_USER'),
-          'password': os.getenv('SP_PASSWORD')}
+values = {'username': os.environ.get('STREAMSPOT_USERNAME'),
+          'password': os.environ.get('STREAMSPOT_PASSWORD')}
 id_num = ""
 mydate = date.today()
-
 
 
 def open_session():
     global session
     global response
-    global session
     global url
     dashboard = "https://mystreamspot.com/dashboard"
     #open session
@@ -34,12 +30,10 @@ def open_session():
     if str(response.url) != dashboard:
         time.sleep(10)
         response = session.post(url + '/login', data=values, allow_redirects=True)
-        time.sleep(30)
-        
+        time.sleep(30)    
     else:
         #go to analytics page
-        response = session.get(url + '/analytics')
-        
+        response = session.get(url + '/analytics') 
         
     return response
 
@@ -116,12 +110,9 @@ download_file()
 message = Mail(
     from_email='from@email.com',
     to_emails='to@email.com',
-    subject='Streamspot script ran successfully',
-    html_content='This email indicates that the script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
+    subject='Streamspot getviewers script ran successfully',
+    html_content='This email indicates that the getviewers script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
 )
 
 sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
 response = sg.send(message)  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
-
-
-#TODO: try/catch

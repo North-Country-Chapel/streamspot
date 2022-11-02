@@ -7,8 +7,8 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, to_email
 
 url = 'https://mystreamspot.com'
-values = {'username': '<username>',
-          'password': '<password>'}
+values = {'username': os.environ.get('STREAMSPOT_USERNAME'),
+          'password': os.environ.get('STREAMSPOT_PASSWORD')}
 dashboard = url + "/dashboard"
 mydate = date.today()
 study_start_minute = "55"
@@ -98,7 +98,7 @@ if response.url == "https://mystreamspot.com/scheduler/?msg=1":
     message = Mail(
     from_email='from@example.com',
     to_emails='to@example.com',
-    subject='Streamspot script ran successfully',
+    subject='Streamspot scheduling script ran successfully',
     html_content='This email indicates that the scheduling script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
     )
 
@@ -106,7 +106,7 @@ else:
     message = Mail(
     from_email='from@example.com',
     to_emails='to@example.com',
-    subject='Streamspot script needs checking',
+    subject='Streamspot scheduling script needs checking',
     html_content='This email indicates that the scheduling script did not run as expected. <p>Check to make sure future studies were scheduled on the site.</p>'
     )
 
