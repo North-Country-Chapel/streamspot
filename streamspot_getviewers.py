@@ -3,7 +3,7 @@ import re
 import time
 import os
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, to_email
+from sendgrid.helpers.mail import Mail
 from datetime import date
 
 
