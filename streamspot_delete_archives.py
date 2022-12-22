@@ -9,6 +9,7 @@ url = 'https://mystreamspot.com'
 values = {'username': os.environ.get('STREAMSPOT_USERNAME'),
           'password': os.environ.get('STREAMSPOT_PASSWORD')}
 
+
 class LoginError(Exception):
     """Raised when the login fails"""
     e = "Login failed"
@@ -30,7 +31,7 @@ def open_session():
     try:
         time.sleep(30)
         response = session.post(url + '/login', data=values, allow_redirects=True)
-        time.sleep(20)
+        time.sleep(50)
         if response.url != "https://mystreamspot.com/dashboard":
             raise LoginError
         
@@ -74,5 +75,3 @@ except:
 
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
-
-
