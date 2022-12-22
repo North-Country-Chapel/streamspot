@@ -69,10 +69,11 @@ def download_file():
     dictionary = response.headers
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
+    filepath = ('C:/Users/Kristin/OneDrive - North Country Chapel/sundaystreams_stats/' + data)
 
 
     #download with header filename 
-    with open(data, 'wb') as file:
+    with open(filepath, 'wb') as file:
         file.write(response.content)
         file.close()
 
@@ -108,11 +109,17 @@ get_first_file_id()
 download_file()
 
 message = Mail(
-    from_email='from@email.com',
-    to_emails='to@email.com',
+    from_email= 'kristin@northcountrychapel.com',
+    to_emails= 'kristin@northcountrychapel.com',
     subject='Streamspot getviewers script ran successfully',
     html_content='This email indicates that the getviewers script ran without errors. <p>There is no guarantee that it ran correctly.</p>'
 )
 
-sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-response = sg.send(message)  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
+
+try:
+    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+    response = sg.send(message)  #https://docs.sendgrid.com/for-developers/sending-email/v3-python-code-example
+
+except Exception as e:
+    print(e.message)    
+
