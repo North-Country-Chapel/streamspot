@@ -1,3 +1,9 @@
+'''
+Get viewer numbers at the same time every week for comparison across weeks. 
+Outlook Desktop application MUST be open for the email verification to work. 
+
+'''
+
 import requests
 import re
 import time
@@ -5,6 +11,8 @@ import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from datetime import date
+import win32com.client  
+import logging
 
 
 url = 'https://mystreamspot.com'
@@ -12,6 +20,30 @@ values = {'username': os.environ.get('STREAMSPOT_USERNAME'),
           'password': os.environ.get('STREAMSPOT_PASSWORD')}
 id_num = ""
 mydate = date.today()
+
+logging.basicConfig(
+    level= logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename= "streamspot.log",
+    )
+
+def verifyEmail():
+    time.sleep(180)
+    logging.info("Verifying email")
+    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+
+    inbox = outlook.Folders('Audio.Visual').Folders('Inbox')
+    messages = inbox.Items.Restrict("[Subject] = 'MyStreamSpot - Verify Email'")
+    messages.Sort('[ReceivedTime]', False)
+    message = messages.GetFirst()
+    logging.info("Message time: " + str(message.ReceivedTime))
+
+    link = re.search(r'https:\/\/mystreamspot\.com\/login-confirmation\?vtoken\=.+?(?=>)', message.body).group(0)
+    # TODO: Delete email afterwards
+    logging.info("Extracted link: " + link)
+
+    return link
 
 
 def open_session():
@@ -24,16 +56,15 @@ def open_session():
     
     # log in
     response = session.post(url + '/login', data=values, allow_redirects=True)
-    
-
-    #test for actual login
-    if str(response.url) != dashboard:
-        time.sleep(10)
-        response = session.post(url + '/login', data=values, allow_redirects=True)
-        time.sleep(30)    
-    else:
-        #go to analytics page
-        response = session.get(url + '/analytics') 
+    logging.info(response.url)
+    time.sleep(10)
+    logging.info("Checking for email verification")
+    verifylink = verifyEmail()
+    response = session.get(verifylink, allow_redirects=True)
+    logging.info(response.url)
+                    
+    #go to analytics page
+    response = session.get(url + '/analytics') 
         
     return response
 
