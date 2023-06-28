@@ -11,8 +11,16 @@ import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from datetime import date
-import win32com.client
 import logging
+from functions.open_session import open_session
+from functions.getEmailLink import verifyEmail
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="streamspot.log",
+)
 
 
 url = "https://mystreamspot.com"
@@ -23,66 +31,21 @@ values = {
 id_num = ""
 mydate = date.today()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    filename="streamspot.log",
-)
+session = open_session()
 
-
-def verifyEmail():
-    time.sleep(60)
-    logging.info("Verifying email")
-    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-
-    inbox = outlook.Folders("Audio.Visual").Folders("Inbox")
-    messages = inbox.Items.Restrict("[Subject] = 'MyStreamSpot - Verify Email'")
-
-    messages.Sort("[ReceivedTime]", False)
-    message = messages.GetLast()
-    logging.info("Message time: " + str(message.ReceivedTime))
-    link_regex = re.compile(
-        "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-    )
-    link = re.findall(link_regex, message.body)[1]
-    logging.info(link)
-
-    message.Unread = False
-    logging.info("Message marked as read")
-
-    return link
-
-
-def open_session():
-    global session
-    global response
-    global url
-    dashboard = "https://mystreamspot.com/dashboard"
-    # open session
-    session = requests.session()
-
-    # log in
-    response = session.post(url + "/login", data=values, allow_redirects=True)
-    logging.info(response.url)
-    time.sleep(10)
-    logging.info("Checking for email verification")
-    verifylink = verifyEmail()
-    response = session.get(verifylink, allow_redirects=True)
-    logging.info(response.url)
-
-    # go to analytics page
-    response = session.get(url + "/analytics")
-
-    return response
+# go to analytics page
+response = session.get(url + "/analytics")
+logging.info(response)
 
 
 def get_first_file_id():
     global response
+    global session
     global id_num
 
     id_num = str(re.search(r"=([A-Z])\w+==", response.text))
     id_num = id_num[46:59]
+    logging.info(id_num)
 
     # get the id_num of the latest study
     if not id_num:
@@ -96,6 +59,7 @@ def get_first_file_id():
 def download_file():
     global url
     global response
+    global session
     global id_num
 
     # switch to file download page
@@ -106,6 +70,7 @@ def download_file():
     dictionary = response.headers
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
+    logging.info(data)
     filepath = (
         "C:/Users/Kristin/OneDrive - North Country Chapel/sundaystreams_stats/" + data
     )
@@ -120,7 +85,9 @@ def download_file():
 
 # get the second newest study for Sunday 1st service
 if mydate.strftime("%w") == "1":
-    open_session()
+    # go to analytics page
+    response = session.get(url + "/analytics")
+
     # get the id_num_num of the latest study
     id_num = re.finditer(r"=([A-Z])\w+==", response.text)
     array = []
@@ -135,10 +102,11 @@ if mydate.strftime("%w") == "1":
             array.append(match.group())
         id_num = array[1]
 
+    logging.info("2nd: " + id_num)
+
     download_file()
 
 
-open_session()
 get_first_file_id()
 download_file()
 
