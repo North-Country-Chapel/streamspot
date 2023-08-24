@@ -7,7 +7,7 @@ Outlook Desktop application MUST be open for the email verification to work.
 import requests
 import time
 import os
-from functions.getEmailLink import verifyEmail
+from getEmailLink import verifyEmail
 import logging
 
 
@@ -41,5 +41,17 @@ def open_session():
     verifylink = verifyEmail()
     response = session.get(verifylink, allow_redirects=True)
     logging.info(response.url)
+    logging.info(response.headers)
+    print(response.status_code)
+    print(response.cookies)
 
-    return session
+    # go to analytics page
+    response = session.get(url + "/analytics/")
+
+    logging.info("Response code: " + str(response.status_code))
+
+    logging.info("Leaving open_session()")
+    return response, session
+
+
+# open_session()
