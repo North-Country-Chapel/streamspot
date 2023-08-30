@@ -53,7 +53,6 @@ def open_session():
     # go to analytics page
     response = session.get(url + "/analytics/", timeout=20)
     logging.info(response.url)
-    logging.info(response.headers)
 
     return response
 
@@ -93,7 +92,6 @@ def download_file():
     dictionary = response.headers
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
-    logging.info(data)
     filepath = (
         "C:/Users/Kristin/OneDrive - North Country Chapel/sundaystreams_stats/" + data
     )
@@ -110,8 +108,9 @@ def download_file():
 # get the second newest study for Sunday 1st service
 if mydate.strftime("%w") == "1":
     logging.info("Entering if loop")
+    open_session()
     # go to analytics page
-    response = session.get(url + "/analytics")
+    response = session.get(url + "/analytics/")
 
     # get the id_num_num of the latest study
     id_num = re.finditer(r"=([A-Z])\w+==", response.text)
@@ -140,8 +139,8 @@ download_file()
 
 
 message = Mail(
-    from_email="kristin@northcountrychapel.com",
-    to_emails="kristin@northcountrychapel.com",
+    from_email=os.environ.get("EMAIL_FROM"),
+    to_emails=os.environ.get("EMAIL_TO"),
     subject="Streamspot getviewers script ran successfully",
     html_content="This email indicates that the getviewers script ran without errors. <p>There is no guarantee that it ran correctly.</p>",
 )
