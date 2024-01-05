@@ -12,15 +12,26 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from datetime import date
 import logging
+import logging.handlers
 from random import *
 from functions.getEmailLink import verifyEmail
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+formatter = logging.Formatter(
+    "%(asctime)s %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    filename="streamspot.log",
 )
+
+handler = logging.handlers.RotatingFileHandler(
+    "streamspot.log", maxBytes=50000, backupCount=3
+)
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
 
 
 url = "https://mystreamspot.com"
@@ -39,20 +50,20 @@ def open_session():
 
     # open session
     session = requests.session()
-    logging.info("Opening session")
+    logger.info("Opening session")
 
     # log in
     response = session.post(url + "/login", data=values, allow_redirects=True)
-    logging.info("Login response: " + response.url)
-    logging.info("Checking for email verification")
+    logger.debug("Login response: " + response.url)
+    logger.info("Checking for email verification")
     verifylink = verifyEmail()
     response = session.get(verifylink, allow_redirects=True)
-    logging.info(response.request.headers)
-    logging.info(response.url)
+    logger.info(response.request.headers)
+    logger.info(response.url)
 
     # go to analytics page
     response = session.get(url + "/analytics/", timeout=20)
-    logging.info(response.url)
+    logger.info(response.url)
 
     return response
 
@@ -62,10 +73,10 @@ def get_first_file_id():
     global session
     global id_num
 
-    logging.info("Entering get_first_file_id()")
+    logger.debug("Entering get_first_file_id()")
     id_num = str(re.search(r"=([A-Z])\w+==", response.text))
     id_num = id_num[46:59]
-    logging.info(id_num)
+    logger.info(id_num)
 
     # get the id_num of the latest study
     if not id_num:
@@ -73,7 +84,7 @@ def get_first_file_id():
         id_num = str(re.search(r"=([A-Z])\w+==", response.text))
         id_num = id_num[46:59]
 
-    logging.info("Leaving get_first_file_id()")
+    logger.debug("Leaving get_first_file_id()")
     return response, id_num
 
 
@@ -83,7 +94,7 @@ def download_file():
     global session
     global id_num
 
-    logging.info("Entering download_file()")
+    logger.debug("Entering download_file()")
     # switch to file download page
     link = url + "/analytics/export-event-uniques?id" + id_num
     response = session.get(link, allow_redirects=True)
@@ -101,13 +112,13 @@ def download_file():
         file.write(response.content)
         file.close()
 
-    logging.info("Leaving download_file()")
+    logger.debug("Leaving download_file()")
     return response
 
 
 # get the second newest study for Sunday 1st service
 if mydate.strftime("%w") == "1":
-    logging.info("Entering if loop")
+    logger.debug("Entering if loop")
     open_session()
     # go to analytics page
     response = session.get(url + "/analytics/")
@@ -126,16 +137,17 @@ if mydate.strftime("%w") == "1":
             array.append(match.group())
         id_num = array[1]
 
-    logging.info("2nd: " + id_num)
+    logger.debug("2nd: " + id_num)
 
     download_file()
-    logging.info("Leaving if loop")
+    logger.debug("Leaving if loop")
 
 
 open_session()
 
 get_first_file_id()
 download_file()
+logger.info("done")
 
 
 message = Mail(
