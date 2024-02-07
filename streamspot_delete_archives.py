@@ -5,7 +5,7 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import logging
-from functions.getEmailLink import verifyEmail
+from functions.getEmailLink import verifyEmailGraph
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,7 +48,7 @@ def open_session():
     logging.info(response.url)
     time.sleep(10)
     logging.info("Checking for email verification")
-    verifylink = verifyEmail()
+    verifylink = verifyEmailGraph()
     response = session.get(verifylink, allow_redirects=True)
     logging.info(response.url)
     logging.info(response.headers)
@@ -90,3 +90,6 @@ except:
 
     sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
     response = sg.send(message)
+
+
+logging.shutdown()

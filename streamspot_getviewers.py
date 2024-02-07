@@ -1,6 +1,7 @@
 """
 Get viewer numbers at the same time every week for comparison across weeks. 
-Outlook Desktop application MUST be open for the email verification to work. 
+Outlook Desktop application MUST be open for the verifyEmail to work.
+verifyEmailGraph does not require Outlook to be open. 
 
 """
 
@@ -14,7 +15,7 @@ from datetime import date
 import logging
 import logging.handlers
 from random import *
-from functions.getEmailLink import verifyEmail
+from functions.getEmailLink import verifyEmailGraph
 
 
 logger = logging.getLogger(__name__)
@@ -56,12 +57,13 @@ def open_session():
     response = session.post(url + "/login", data=values, allow_redirects=True)
     logger.debug("Login response: " + response.url)
     logger.info("Checking for email verification")
-    verifylink = verifyEmail()
+    verifylink = verifyEmailGraph()
     response = session.get(verifylink, allow_redirects=True)
     logger.info(response.request.headers)
     logger.info(response.url)
 
     # go to analytics page
+    time.sleep(15)
     response = session.get(url + "/analytics/", timeout=20)
     logger.info(response.url)
 
