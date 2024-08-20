@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timedelta
 import os
 from html import unescape
+from msal import ConfidentialClientApplication, PublicClientApplication
 
 
 logging.basicConfig(
@@ -22,7 +23,7 @@ logging.basicConfig(
     filename="streamspot.log",
 )
 
-
+# Doesn't work with modern (2023) Outlook 
 def verifyEmail():
     time.sleep(60)
     logging.info("Verifying email")
@@ -77,6 +78,8 @@ def verifyEmailGraph():
 
     token_response = requests.post(token_url, data=token_data)
     access_token = token_response.json().get("access_token")
+    logging.debug(token_response)
+    logging.debug(access_token)
 
     # Get email request
     headers = {
@@ -93,9 +96,10 @@ def verifyEmailGraph():
 
     response = requests.get(graph_api_url, headers=headers, params=params)
 
+    link = None
     if response.status_code == 200:
         emails = response.json().get("value", [])
-        link = None
+    
 
         for email in emails:
             body = email.get("body", {}).get("content")
@@ -134,3 +138,5 @@ def verifyEmailGraph():
         logging.warning(f"Error: {response.status_code}, {response.text}")
 
     return link
+
+verifyEmailGraph()

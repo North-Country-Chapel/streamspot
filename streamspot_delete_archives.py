@@ -51,12 +51,12 @@ def open_session():
     verifylink = verifyEmailGraph()
     response = session.get(verifylink, allow_redirects=True)
     logging.info(response.url)
-    logging.info(response.headers)
+    logging.debug(response.headers)
 
     # go to expired-archive page
     response = session.get(url + "/archive/expired-archives")
     logging.info(response.url)
-    logging.info(response.headers)
+    logging.debug(response.headers)
 
     return response
 
@@ -75,21 +75,18 @@ try:
         allow_redirects=True,
     )
 
-    if response.status_code != "200":
+    if response.status_code != 200:
         raise DeleteError
     else:
         logging.info("Delete successful")
 
-except:
+except Exception as e:
     message = Mail(
         from_email="kristin@northcountrychapel.com",
         to_emails="kristin@northcountrychapel.com.com",
         subject="Streamspot delete archive script did not complete ",
-        html_content="This email indicates that the delete archive script did not run as expected. <p>Check to make sure expired studies were deleted on the site.</p>",
+        html_content=f"This email indicates that the delete archive script did not run as expected. <p>Error details: {str(e)}.</p>",
     )
 
     sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
     response = sg.send(message)
-
-
-logging.shutdown()
