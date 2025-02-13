@@ -97,7 +97,7 @@ def download_file():
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
     filepath = (
-        "C:/Users/Kristin/OneDrive - North Country Chapel/sundaystreams_stats/" + data
+        "C:/Users/KristinHoppe/OneDrive - North Country Chapel/sundaystreams_stats/" + data
     )
 
     # download with header filename
