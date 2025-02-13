@@ -2,7 +2,7 @@
 
 # Streamspot
 
-**streamspot_getviewers.py** logs in to mystreamspot.com and pulls the newest unique-viewer analytics CSV file. Except on Mondays where it pulls the newest and second-newest because there are two Sunday videos. Create a cronjob/task scheduler to make it fully hands-off. Downloads the file to the folder the script is in. Now includes grabbing email verification link. Outlook Desktop must be open for this to work.
+**streamspot_getviewers.py** logs in to mystreamspot.com and pulls the newest unique-viewer analytics CSV file. Except on Mondays where it pulls the newest and second-newest because there are two Sunday videos. Create a cronjob/task scheduler to make it fully hands-off. Downloads the file to the folder the script is in. Now includes grabbing email verification link. ~~Outlook Desktop must be open for this to work.~~  Email verification with GraphAPI so Outlook Desktop is not needed.
 
 **streamspot_delete_archives.py** logs into mystreamspot.com and deletes any expired archives so they aren't taking up Current Storage space. Now includes email verification link.
 
