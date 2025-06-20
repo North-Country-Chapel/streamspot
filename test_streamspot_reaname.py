@@ -1,5 +1,6 @@
 """
-Script to log into Streamspot and navigate to the archive page.
+Script to log into Streamspot and rename videos based on WordPress post titles.
+Uses WordPress API to get post titles and matches them with Streamspot videos.
 Outlook Desktop application MUST be open for the verifyEmail to work.
 verifyEmailGraph does not require Outlook to be open. 
 
@@ -8,12 +9,17 @@ verifyEmailGraph does not require Outlook to be open.
 import requests
 import time
 import os
+import re
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from datetime import date
 import logging
 import logging.handlers
 from functions.getEmailLink import verifyEmailGraph
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 # Setup logging to both file and console
@@ -29,18 +35,18 @@ formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%Y-%m-%d
 
 # File handler
 file_handler = logging.FileHandler(log_file, mode='a')
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 
 # Console handler
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(formatter)
 
 # Add handlers to logger
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 logging.info(f"Log file location: {log_file}")
 
@@ -59,6 +65,22 @@ values = {
     "password": os.environ.get("STREAMSPOT_PASSWORD"),
 }
 mydate = date.today()
+
+# WordPress API settings
+wp_api_url = os.getenv("WP_API_URL")
+if not wp_api_url:
+    logging.error("WP_API_URL environment variable not set")
+    wp_url = None
+else:
+    wp_url = wp_api_url + "posts?categories=48&per_page=3"
+
+wp_username = os.getenv("WP_API_USER")
+wp_password = os.getenv("WP_API_PASSWORD")
+wp_headers = {
+    "Accept": "*/*",
+    "Content-Type": "application/json",
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+}
 
 
 def open_session():
@@ -101,7 +123,19 @@ def navigate_to_archive():
         # Get the archive data via AJAX endpoint (same as the page uses)
         archive_data = get_archive_data()
         if archive_data:
-            process_archive_data(archive_data)
+            # Get WordPress post information
+            if wp_url:  # Only try WordPress if URL is configured
+                wp_posts = get_wordpress_info()
+                if wp_posts:
+                    # Process archives and match with WordPress posts by date
+                    renamed_count = match_and_rename_videos(archive_data['rows'], wp_posts)
+                    logging.info(f"Rename operation completed. {renamed_count} videos renamed.")
+                else:
+                    logging.warning("No WordPress posts found for matching")
+            else:
+                logging.error("WordPress integration not configured. Please set WP_API_URL, WP_API_USER, and WP_API_PASSWORD environment variables.")
+        else:
+            logging.error("No archive data available")
         
     else:
         logging.error(f"Failed to access archive page. Status code: {response.status_code}")
@@ -276,10 +310,6 @@ def main():
         # Navigate to archive page and process archives
         navigate_to_archive()
         
-        # Example: Rename the most recent video
-        # You can modify this logic based on your needs
-        example_rename_recent_video()
-        
         logging.info("Streamspot rename script completed successfully")
         
         # Send success email
@@ -316,40 +346,156 @@ def main():
             pass  # Don't fail if we can't send the error email
 
 
-def example_rename_recent_video():
-    """Example function showing how to rename the most recent video"""
-    logging.debug("Entering example_rename_recent_video()")
+def get_wordpress_info():
+    """Get 3 WordPress posts and extract titles and dates"""
+    logging.debug("Entering get_wordpress_info()")
     
-    # Get fresh archive data
-    archive_data = get_archive_data()
-    if not archive_data or not archive_data.get('rows'):
-        logging.warning("No archives found to rename")
-        return
+    # Check if WordPress URL is configured
+    if not wp_url:
+        logging.error("WordPress API URL not configured. Please set WP_API_URL environment variable.")
+        return []
     
-    # Get the most recent video
-    most_recent = archive_data['rows'][0]
-    video_info = extract_video_info(most_recent)
+    try:
+        response = requests.get(wp_url, headers=wp_headers)
+        response.raise_for_status()
+        posts = response.json()
+        logging.info(f"Retrieved {len(posts)} WordPress posts")
+    except Exception as e:
+        logging.error(f"Failed to retrieve WordPress posts: {e}")
+        return []
     
-    if video_info:
-        current_title = video_info['title']
-        logging.info(f"Current title: '{current_title}'")
+    wp_posts = []
+    
+    for post in posts:
+        # Extract date from post (assuming it's in the post date field)
+        post_date = post['date'][:10]  # Get YYYY-MM-DD format
+        post_title = post['title']['rendered']
         
-        # Example renaming logic - modify this as needed
+        # Clean the title for Streamspot
+        clean_title = sanitize_title_for_streamspot(post_title)
+        
+        wp_posts.append({
+            'date': post_date,
+            'title': post_title,
+            'clean_title': clean_title
+        })
+        
+        logging.info(f"WordPress Post: Date={post_date}, Title='{post_title}', Clean='{clean_title}'")
+
+    logging.debug("Leaving get_wordpress_info()")
+    return wp_posts
+
+
+def sanitize_title_for_streamspot(title):
+    """Clean title for Streamspot compatibility"""
+    import html
+    
+    # Decode HTML entities (&#038; -> &, etc.)
+    clean_title = html.unescape(title)
+    
+    # Replace characters that Streamspot doesn't allow
+    replacements = {
+        ':': '_', 
+        ',': '',
+        '&': 'and', 
+        '&#038;': 'and', 
+        '<': '', 
+        '>': '',
+        '"': '', 
+        "'": '',
+        '|': '-',
+        '\\': '-',
+        '/': '-',
+        '*': '',
+        '?': '', 
+    }
+    
+    for char, replacement in replacements.items():
+        clean_title = clean_title.replace(char, replacement)
+    
+    # Clean up any double spaces or dashes
+    clean_title = re.sub(r'\s+', ' ', clean_title)  # Multiple spaces to single space
+    clean_title = re.sub(r'-+', '-', clean_title)   # Multiple dashes to single dash
+    clean_title = clean_title.strip()               # Remove leading/trailing whitespace
+    
+    logging.debug(f"Sanitized '{title}' to '{clean_title}'")
+    return clean_title
+
+
+def parse_streamspot_date(date_string):
+    """Parse Streamspot date format to YYYY-MM-DD"""
+    try:
+        # Streamspot format appears to be like "Mon 06/16/25"
+        # Extract the date part and convert to proper format
         from datetime import datetime
-        today = datetime.now().strftime("%Y-%m-%d")
-        new_title = f"Sunday Service - {today}"
         
-        # Only rename if the title is different
-        if current_title != new_title:
-            success = rename_video(video_info, new_title)
-            if success:
-                logging.info(f"Successfully renamed video from '{current_title}' to '{new_title}'")
-            else:
-                logging.error(f"Failed to rename video")
-        else:
-            logging.info("Video title is already correct, no rename needed")
+        # Remove day name and parse the date
+        date_part = date_string.split(' ')[1]  # Get "06/16/25"
+        month, day, year = date_part.split('/')
+        
+        # Convert 2-digit year to 4-digit (assuming 20xx)
+        full_year = f"20{year}"
+        
+        # Create proper date format YYYY-MM-DD
+        formatted_date = f"{full_year}-{month.zfill(2)}-{day.zfill(2)}"
+        
+        logging.debug(f"Converted '{date_string}' to '{formatted_date}'")
+        return formatted_date
+        
+    except Exception as e:
+        logging.error(f"Error parsing Streamspot date '{date_string}': {e}")
+        return None
+
+
+def match_and_rename_videos(archives, wp_posts):
+    """Match Streamspot videos with WordPress posts by date and rename them"""
+    logging.debug("Entering match_and_rename_videos()")
     
-    logging.debug("Leaving example_rename_recent_video()")
+    renamed_count = 0
+    
+    for archive in archives:
+        video_info = extract_video_info(archive)
+        if not video_info:
+            continue
+            
+        current_title = video_info['title']
+        video_date_raw = video_info['date']
+        
+        # Parse the Streamspot date
+        video_date = parse_streamspot_date(video_date_raw)
+        if not video_date:
+            logging.warning(f"Could not parse date for video: {current_title}")
+            continue
+            
+        logging.debug(f"Processing video: '{current_title}' from {video_date}")
+        
+        # Find WordPress post with matching date
+        matching_wp_post = None
+        for wp_post in wp_posts:
+            if wp_post['date'] == video_date:
+                matching_wp_post = wp_post
+                break
+        
+        if matching_wp_post:
+            new_title = matching_wp_post['clean_title']
+            logging.info(f"Date match found! Video date: {video_date}, WP title: '{matching_wp_post['title']}'")
+            
+            # Only rename if the titles are different
+            if current_title != new_title:
+                success = rename_video(video_info, new_title)
+                if success:
+                    logging.info(f"Successfully renamed '{current_title}' to '{new_title}'")
+                    renamed_count += 1
+                else:
+                    logging.error(f"Failed to rename video: {video_info['id_hash']}")
+            else:
+                logging.info(f"Video '{current_title}' already has correct title, skipping")
+        else:
+            logging.debug(f"No WordPress post found for date: {video_date}")
+    
+    logging.info(f"Total videos renamed: {renamed_count}")
+    logging.debug("Leaving match_and_rename_videos()")
+    return renamed_count
 
 
 if __name__ == "__main__":
