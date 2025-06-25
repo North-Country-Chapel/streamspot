@@ -2,8 +2,10 @@
 
 # Streamspot
 
+**streamspot_rename.py** logs into mystreamspot.com and renames the archive videos based on the titles of the Wordpress posts. Uses Outlook graph API and Wordpress API.
+
 **streamspot_getviewers.py** logs in to mystreamspot.com and pulls the newest unique-viewer analytics CSV file. Except on Mondays where it pulls the newest and second-newest because there are two Sunday videos. Create a cronjob/task scheduler to make it fully hands-off. Downloads the file to the folder the script is in. Now includes grabbing email verification link. ~~Outlook Desktop must be open for this to work.~~  Email verification with GraphAPI so Outlook Desktop is not needed.
 
 **streamspot_delete_archives.py** logs into mystreamspot.com and deletes any expired archives so they aren't taking up Current Storage space. Now includes email verification link.
 
-**streamspot_add_schedule.py** ~~logs into mystreamspot.com and fills in the form to add a broadcast. Because if you don't have the premium and want facebook integration you can't do recurring broadcasts. That gets old after a year or so. According to [XKCD](https://xkcd.com/1205) I'm saving 21 hours over the next five years.~~  Leveled up, no longer necessary
+**streamspot_add_schedule.py** ~~logs into mystreamspot.com and fills in the form to add a broadcast. Because if you don't have the premium and want facebook integration you can't do recurring broadcasts. That gets old after a year or so. According to [XKCD](https://xkcd.com/1205) I'm saving 21 hours over the next five years.~~  Leveled up, no longer necessary.
