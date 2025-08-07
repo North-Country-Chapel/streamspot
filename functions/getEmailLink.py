@@ -6,6 +6,7 @@ verifyEmailGraph does not require Outlook to be open.
 """
 
 import requests
+# import win32com.client
 import re
 import logging
 import time
@@ -14,35 +15,32 @@ import os
 from html import unescape
 from msal import ConfidentialClientApplication, PublicClientApplication
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    filename="streamspot.log",
-)
+logger = logging.getLogger(__name__)
 
 # Doesn't work with modern (2023) Outlook 
 # def verifyEmail():
 #     time.sleep(60)
-#     logging.info("Verifying email")
+#     logger.info("Verifying email")
 #     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
 
+#     inbox = outlook.Folders("Audio.Visual").Folders("Inbox")
+#     messages = inbox.Items.Restrict("[Subject] = 'MyStreamSpot - Verify Email'")
 #     inbox = outlook.Folders("Audio.Visual").Folders("Inbox")
 #     messages = inbox.Items.Restrict("[Subject] = 'MyStreamSpot - Verify Email'")
 
 #     messages.Sort("[ReceivedTime]", False)
 #     message = messages.GetLast()
-#     logging.info("Message time: " + str(message.ReceivedTime))
+#     logger.info("Message time: " + str(message.ReceivedTime))
 #     link_regex = re.compile(
 #         "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 #     )
 #     link = re.findall(link_regex, message.body)[1]
-#     logging.info(link)
+#     logger.info(link)
 
 #     message.Unread = False
-#     logging.info("Message marked as read")
+#     logger.info("Message marked as read")
 
+#     return link
 #     return link
 
 
@@ -77,8 +75,8 @@ def verifyEmailGraph():
 
     token_response = requests.post(token_url, data=token_data)
     access_token = token_response.json().get("access_token")
-    logging.debug(token_response)
-    logging.debug(access_token)
+    logger.debug(token_response)
+    logger.debug(access_token)
 
     # Get email request
     headers = {
@@ -103,7 +101,7 @@ def verifyEmailGraph():
         for email in emails:
             body = email.get("body", {}).get("content")
             message_id = email.get("id")
-            logging.debug(message_id)
+            logger.debug(message_id)
             link_regex = re.compile(
                 "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
             )
@@ -111,11 +109,11 @@ def verifyEmailGraph():
             # There's an &amp; that messes up the link
             # I'm sure it's some encoding difference with Graph API
             unescaped_links = [unescape(link) for link in links]
-            logging.debug(unescaped_links)
+            logger.debug(unescaped_links)
 
             if unescaped_links:
                 link = unescaped_links[1]
-                logging.debug(link)
+                logger.debug(link)
 
             # Mark the email as read
             mark_as_read_url = f"https://graph.microsoft.com/v1.0/users/8f2584e3-ce39-4cd7-bb4b-83efac00797b/messages/{message_id}"
@@ -126,12 +124,12 @@ def verifyEmailGraph():
             )
 
             if mark_as_read_response.status_code == 200:
-                logging.info("Latest email marked as read successfully.")
+                logger.info("Latest email marked as read successfully.")
             else:
                 logging.warning(
                     f"Error marking email as read: {mark_as_read_response.status_code}, {mark_as_read_response.text}"
                 )
-            logging.info(link)
+            logger.info(link)
 
     else:
         logging.warning(f"Error: {response.status_code}, {response.text}")
