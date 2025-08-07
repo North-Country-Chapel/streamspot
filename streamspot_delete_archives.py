@@ -1,19 +1,20 @@
+#!/usr/bin/python3
+
 import requests
 import time
 import os
 import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-import logging
 from functions.getEmailLink import verifyEmailGraph
+from functions.logging_config import setup_logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    filename="streamspot.log",
+setup_logging(
+    config_path='functions/logging_config.json',
+    log_file_path='streamspot.log'
 )
 
+logger= logging.getLogger(__name__)
 
 url = "https://mystreamspot.com"
 values = {
@@ -41,22 +42,22 @@ def open_session():
     dashboard = "https://mystreamspot.com/dashboard"
     # open session
     session = requests.session()
-    logging.info("Opening session")
+    logger.info("Opening session")
 
     # log in
     response = session.post(url + "/login", data=values, allow_redirects=True)
-    logging.info(response.url)
+    logger.info(response.url)
     time.sleep(10)
-    logging.info("Checking for email verification")
+    logger.info("Checking for email verification")
     verifylink = verifyEmailGraph()
     response = session.get(verifylink, allow_redirects=True)
-    logging.info(response.url)
-    logging.debug(response.headers)
+    logger.info(response.url)
+    logger.debug(response.headers)
 
     # go to expired-archive page
     response = session.get(url + "/archive/expired-archives")
-    logging.info(response.url)
-    logging.debug(response.headers)
+    logger.info(response.url)
+    logger.debug(response.headers)
 
     return response
 
@@ -78,12 +79,12 @@ try:
     if response.status_code != 200:
         raise DeleteError
     else:
-        logging.info("Delete successful")
+        logger.info("Delete successful")
 
 except Exception as e:
     message = Mail(
         from_email="kristin@northcountrychapel.com",
-        to_emails="kristin@northcountrychapel.com.com",
+        to_emails="kristin@northcountrychapel.com",
         subject="Streamspot delete archive script did not complete ",
         html_content=f"This email indicates that the delete archive script did not run as expected. <p>Error details: {str(e)}.</p>",
     )

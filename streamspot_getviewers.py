@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 """
 Get viewer numbers at the same time every week for comparison across weeks. 
 Outlook Desktop application MUST be open for the verifyEmail to work.
@@ -13,18 +15,17 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from datetime import date
 import logging
-import logging.handlers
 from random import *
 from functions.getEmailLink import verifyEmailGraph
+from functions.logging_config import setup_logging
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    filename="streamspot.log",
+setup_logging(
+    config_path='functions/logging_config.json',
+    log_file_path='streamspot.log'
 )
 
+logger=logging.getLogger(__name__)
 
 url = "https://mystreamspot.com"
 values = {
@@ -42,21 +43,21 @@ def open_session():
 
     # open session
     session = requests.session()
-    logging.info("Opening session")
+    logger.info("Opening session")
 
     # log in
     response = session.post(url + "/login", data=values, allow_redirects=True)
-    logging.debug("Login response: " + response.url)
-    logging.info("Checking for email verification")
+    logger.debug("Login response: " + response.url)
+    logger.info("Checking for email verification")
     verifylink = verifyEmailGraph()
     response = session.get(verifylink, allow_redirects=True)
-    logging.info(response.request.headers)
-    logging.info(response.url)
+    logger.info(response.request.headers)
+    logger.info(response.url)
 
     # go to analytics page
     time.sleep(15)
     response = session.get(url + "/analytics/", timeout=20)
-    logging.info(response.url)
+    logger.info(response.url)
 
     return response
 
@@ -66,10 +67,10 @@ def get_first_file_id():
     global session
     global id_num
 
-    logging.debug("Entering get_first_file_id()")
+    logger.debug("Entering get_first_file_id()")
     id_num = str(re.search(r"=([A-Z])\w+==", response.text))
     id_num = id_num[46:59]
-    logging.info(id_num)
+    logger.info(id_num)
 
     # get the id_num of the latest study
     if not id_num:
@@ -77,7 +78,7 @@ def get_first_file_id():
         id_num = str(re.search(r"=([A-Z])\w+==", response.text))
         id_num = id_num[46:59]
 
-    logging.debug("Leaving get_first_file_id()")
+    logger.debug("Leaving get_first_file_id()")
     return response, id_num
 
 
@@ -87,7 +88,7 @@ def download_file():
     global session
     global id_num
 
-    logging.debug("Entering download_file()")
+    logger.debug("Entering download_file()")
     # switch to file download page
     link = url + "/analytics/export-event-uniques?id" + id_num
     response = session.get(link, allow_redirects=True)
@@ -97,7 +98,7 @@ def download_file():
     data = str(dictionary.get("Content-Disposition"))
     data = data[22:-2]
     filepath = (
-        "C:/Users/KristinHoppe/OneDrive - North Country Chapel/sundaystreams_stats/" + data
+        "/mnt/streamspot/" + data
     )
 
     # download with header filename
@@ -105,13 +106,13 @@ def download_file():
         file.write(response.content)
         file.close()
 
-    logging.debug("Leaving download_file()")
+    logger.debug("Leaving download_file()")
     return response
 
 
 # get the second newest study for Sunday 1st service
 if mydate.strftime("%w") == "1":
-    logging.debug("Entering if loop")
+    logger.debug("Entering if loop")
     open_session()
     # go to analytics page
     response = session.get(url + "/analytics/")
@@ -130,17 +131,17 @@ if mydate.strftime("%w") == "1":
             array.append(match.group())
         id_num = array[1]
 
-    logging.debug("2nd: " + id_num)
+    logger.debug("2nd: " + id_num)
 
     download_file()
-    logging.debug("Leaving if loop")
+    logger.debug("Leaving if loop")
 
 
 open_session()
 
 get_first_file_id()
 download_file()
-logging.info("GetViewers successful")
+logger.info("GetViewers successful")
 
 
 message = Mail(

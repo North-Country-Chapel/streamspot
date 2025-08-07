@@ -1,0 +1,34 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "json": {
+            "()": "logging_config.JSONFormatter"
+        },
+        "standard": {
+            "format": "%(asctime)s - %(levelname)s - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S%z"
+        }
+    },
+    "handlers": {
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "log.txt",
+            "formatter": "json",
+            "level": "INFO",
+            "maxBytes": 200000,
+            "backupCount": 3,
+            "mode": "a"
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "level": "INFO",
+            "stream": "ext://sys.stdout"
+        }
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["file", "console"]
+    }
+}
