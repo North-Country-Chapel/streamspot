@@ -3,7 +3,7 @@
     "disable_existing_loggers": false,
     "formatters": {
         "json": {
-            "()": "logging_config.JSONFormatter"
+            "()": "functions.logging_config.JSONFormatter"
         },
         "standard": {
             "format": "%(asctime)s - %(levelname)s - %(message)s",
